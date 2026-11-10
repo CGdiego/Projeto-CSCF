@@ -10,7 +10,7 @@ var TOPICO_CHAMADO = "cscf/grupo18/hollow/estacao/chamado";
 var TOPICO_ESTADO_BANCO = "cscf/grupo18/hollow/banco/estado";
 var TOPICO_COMANDO_BANCO = "cscf/grupo18/hollow/banco/comando";
 
-var client = new Paho.MQTT.Client(broker, 8000, clientId);
+var client = new Paho.MQTT.Client(broker, 8884, clientId);
 
 var connectionStatus = document.getElementById("connection-status");
 var connectionIndicator = document.getElementById("connection-indicator");
@@ -66,7 +66,7 @@ client.onMessageArrived = function(message) {
 
 // Conecta ao broker HiveMQ.
 client.connect({
-    useSSL: false,
+    useSSL: true,
 
     onSuccess: function() {
         console.log("Mesa do Cartógrafo conectada ao HiveMQ.");
