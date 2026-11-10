@@ -1,0 +1,36 @@
+{
+  "version": 1,
+  "author": "Anonymous",
+  "editor": "wokwi",
+  "parts": [
+    {
+      "type": "wokwi-esp32-devkit-v1",
+      "id": "esp",
+      "top": 0,
+      "left": 0,
+      "attrs": { "env": "micropython-20220618-v1.19.1" }
+    },
+    { "type": "wokwi-hc-sr04", "id": "ultrasonic", "top": -75.3, "left": 216.7, "attrs": {} },
+    {
+      "type": "wokwi-led",
+      "id": "led_banco",
+      "top": 217.2,
+      "left": 32.6,
+      "attrs": { "color": "white" }
+    },
+    { "type": "wokwi-buzzer", "id": "buzzer", "top": 108, "left": 251.4, "attrs": {} }
+  ],
+  "connections": [
+    [ "esp:TX0", "$serialMonitor:RX", "", [] ],
+    [ "esp:RX0", "$serialMonitor:TX", "", [] ],
+    [ "ultrasonic:VCC", "esp:5V", "red", [] ],
+    [ "ultrasonic:GND", "esp:GND.1", "black", [ "v9.6", "h-164.4", "v120.2" ] ],
+    [ "ultrasonic:TRIG", "esp:D5", "green", [ "v38.4", "h-0.4", "v33.7" ] ],
+    [ "ultrasonic:ECHO", "esp:D18", "blue", [ "v28.8", "h-183.2", "v33.7" ] ],
+    [ "led_banco:A", "esp:D19", "orange", [ "h57.6", "v-254.2" ] ],
+    [ "led_banco:C", "esp:GND.2", "black", [ "h-57.2", "v-177.4" ] ],
+    [ "buzzer:2", "esp:D21", "purple", [ "v19.2", "h-67.6", "v-148.3" ] ],
+    [ "buzzer:1", "esp:GND.3", "black", [] ]
+  ],
+  "dependencies": {}
+}
