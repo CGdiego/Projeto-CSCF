@@ -1,0 +1,249 @@
+/* Visual original da Mesa do Cartógrafo, adaptado aos elementos atuais. */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: Arial, sans-serif;
+    background-color: #2c3e50;
+    color: white;
+    text-align: center;
+    padding: 30px;
+    margin: 0;
+}
+
+.page {
+    max-width: 1100px;
+    margin: 0 auto;
+}
+
+.page-header {
+    margin: 10px auto 30px;
+}
+
+.eyebrow,
+.system-code {
+    color: #bdc3c7;
+    font-size: 12px;
+    letter-spacing: 1px;
+    margin: 0 0 8px;
+}
+
+h1 {
+    color: #f1c40f;
+    margin: 0 0 10px;
+}
+
+.intro {
+    color: #ecf0f1;
+    margin: 0 0 16px;
+}
+
+.connection-line {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 9px;
+    color: #bdc3c7;
+    font-size: 13px;
+}
+
+.connection-dot,
+.sensor-indicator {
+    display: inline-block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #f39c12;
+}
+
+.connection-dot.is-connected,
+.sensor-indicator {
+    background: #2ecc71;
+}
+
+.connection-dot.is-disconnected {
+    background: #e74c3c;
+}
+
+.systems-grid {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    align-items: stretch;
+    gap: 20px;
+}
+
+.card {
+    background-color: #34495e;
+    padding: 20px;
+    margin: 0;
+    border-radius: 10px;
+    width: min(100%, 330px);
+    flex: 1 1 280px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
+    border-left: 5px solid #f1c40f;
+    text-align: center;
+}
+
+.card-heading {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    text-align: left;
+}
+
+.card-heading h2 {
+    font-size: 20px;
+    margin: 0 0 12px;
+}
+
+.system-mark {
+    color: #f1c40f;
+    font-size: 22px;
+    font-weight: bold;
+}
+
+.reading {
+    margin: 12px 0 18px;
+}
+
+.reading-label {
+    display: block;
+    color: #bdc3c7;
+    font-size: 13px;
+    margin-bottom: 7px;
+}
+
+.status {
+    display: inline-block;
+    font-weight: bold;
+    color: #2ecc71;
+    font-size: 18px;
+}
+
+.status-danger {
+    color: #e74c3c;
+}
+
+.status-warning {
+    color: #f1c40f;
+}
+
+.status-info {
+    color: #3498db;
+}
+
+.status-good {
+    color: #2ecc71;
+}
+
+.card-divider,
+.card-separator {
+    border: 0;
+    border-top: 1px solid #2c3e50;
+    margin: 18px 0;
+}
+
+.control-heading h3 {
+    font-size: 16px;
+    margin: 0 0 7px;
+}
+
+.control-heading p,
+.feedback,
+.sensor-note {
+    color: #bdc3c7;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+.button-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+button,
+.button {
+    padding: 10px 16px;
+    font-size: 14px;
+    margin: 7px 4px;
+    cursor: pointer;
+    border: none;
+    border-radius: 5px;
+    background-color: #e67e22;
+    color: white;
+    font-weight: bold;
+    transition: background-color 0.2s;
+}
+
+button:hover,
+.button:hover {
+    background-color: #d35400;
+}
+
+.button-secondary {
+    background-color: #7f8c8d;
+}
+
+.button-secondary:hover {
+    background-color: #636e72;
+}
+
+.button-text {
+    background: transparent;
+    color: #f1c40f;
+    text-decoration: underline;
+}
+
+.button-text:hover {
+    background: transparent;
+    color: #f39c12;
+}
+
+.button-wide {
+    min-width: 170px;
+}
+
+.feedback {
+    min-height: 20px;
+    margin: 10px 0 0;
+}
+
+.sensor-note {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
+}
+
+.page-footer {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    gap: 8px;
+    color: #bdc3c7;
+    font-size: 12px;
+    margin: 25px auto 0;
+}
+
+@media (max-width: 600px) {
+    body {
+        padding: 20px 12px;
+    }
+
+    .systems-grid {
+        display: block;
+    }
+
+    .card {
+        width: 100%;
+        margin: 0 auto 18px;
+    }
+
+    .page-footer {
+        justify-content: center;
+    }
+}

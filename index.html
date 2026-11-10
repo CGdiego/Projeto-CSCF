@@ -1,0 +1,194 @@
+
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#171b20">
+    <title>Mesa do Cartógrafo | Grupo 18</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js"
+            type="text/javascript"></script>
+    <script src="script.js" defer></script>
+</head>
+<body>
+    <main class="page">
+        <header class="page-header">
+            <div class="eyebrow">PROJETO CPS · GRUPO 18</div>
+            <h1>Mesa do Cartógrafo</h1>
+            <p class="intro">Central de monitoramento e controle dos sistemas de Hallownest.</p>
+            <div class="connection-line">
+                <span id="connection-indicator" class="connection-dot"></span>
+                <span id="connection-status">Conectando ao broker MQTT...</span>
+            </div>
+        </header>
+
+        <section class="systems-grid" aria-label="Sistemas monitorados">
+
+            <!-- SISTEMA A -->
+            <article class="card">
+                <div class="card-heading">
+                    <div>
+                        <p class="system-code">SISTEMA A</p>
+                        <h2>Templo do Ovo Negro</h2>
+                    </div>
+                    <span class="system-mark">A</span>
+                </div>
+
+                <div class="reading">
+                    <span class="reading-label">Nível de infecção</span>
+                    <span id="status-infeccao" class="status">Aguardando dados...</span>
+                </div>
+
+                <div class="card-divider"></div>
+
+                <div class="control-heading">
+                    <h3>Controle do indicador</h3>
+                    <p>Comande o LED local ou devolva o controle ao sensor.</p>
+                </div>
+
+                <div class="button-row">
+                    <button class="button button-primary"
+                        onclick="controlarLedTemplo('LIGAR')">
+                        Ligar LED
+                    </button>
+
+                    <button class="button button-secondary"
+                        onclick="controlarLedTemplo('DESLIGAR')">
+                        Desligar LED
+                    </button>
+                </div>
+
+                <button class="button button-text"
+                    onclick="controlarLedTemplo('AUTO')">
+                    Voltar ao modo automático
+                </button>
+
+                <p id="status-comando-templo" class="feedback" aria-live="polite">
+                    Controle automático pelo LDR.
+                </p>
+            </article>
+
+            <!-- SISTEMA B -->
+            <article class="card">
+                <div class="card-heading">
+                    <div>
+                        <p class="system-code">SISTEMA B</p>
+                        <h2>Estação do Besouro</h2>
+                    </div>
+                    <span class="system-mark">B</span>
+                </div>
+
+                <div class="reading">
+                    <span class="reading-label">Status da viagem</span>
+                    <span id="status-besouro" class="status">Aguardando chamado...</span>
+                </div>
+
+                <div class="card-divider"></div>
+
+                <div class="control-heading">
+                    <h3>Controle do portão</h3>
+                    <p>Abra ou feche o portão manualmente ou retorne ao controle automático.</p>
+                </div>
+
+                <div class="button-row">
+                    <button class="button button-primary"
+                        onclick="controlarPortao('ABRIR')">
+                        Abrir portão
+                    </button>
+
+                    <button class="button button-secondary"
+                        onclick="controlarPortao('FECHAR')">
+                        Fechar portão
+                    </button>
+                </div>
+
+                <button class="button button-text"
+                    onclick="controlarPortao('AUTO')">
+                    Voltar ao modo automático
+                </button>
+
+                <p id="status-comando-besouro" class="feedback" aria-live="polite">
+                    Controle automático pela infecção.
+                </p>
+
+                <div class="card-divider"></div>
+
+                <div class="control-heading">
+                    <h3>Solicitar transporte</h3>
+                    <p>Envie um chamado para o Banco de Descanso.</p>
+                </div>
+
+                <button class="button button-primary button-wide"
+                    onclick="chamarBesouro()">
+                    Chamar Besouro
+                </button>
+
+                <p class="feedback">O chamado é enviado pela rede MQTT.</p>
+            </article>
+
+            <!-- SISTEMA C -->
+            <article class="card">
+                <div class="card-heading">
+                    <div>
+                        <p class="system-code">SISTEMA C</p>
+                        <h2>Banco de Descanso</h2>
+                    </div>
+                    <span class="system-mark">C</span>
+                </div>
+
+                <div class="reading">
+                    <span class="reading-label">Ocupação do banco</span>
+                    <span id="status-banco" class="status">Aguardando dados...</span>
+                </div>
+
+                <div class="card-divider"></div>
+
+                <div class="control-heading">
+                    <h3>Monitoramento</h3>
+                    <p>O sensor ultrassônico identifica a presença e atualiza o estado do banco.</p>
+                </div>
+
+                <div class="sensor-note">
+                    <span class="sensor-indicator"></span>
+                    <span>Leitura automática pelo HC-SR04</span>
+                </div>
+
+                <div class="card-divider"></div>
+
+                <div class="control-heading">
+                    <h3>Controle da iluminação</h3>
+                    <p>Ligue ou desligue o LED manualmente ou retorne ao controle automático pelo sensor.</p>
+                </div>
+
+                <div class="button-row">
+                    <button class="button button-primary"
+                        onclick="controlarLedBanco('LIGAR')">
+                        Ligar LED
+                    </button>
+
+                    <button class="button button-secondary"
+                        onclick="controlarLedBanco('DESLIGAR')">
+                        Desligar LED
+                    </button>
+                </div>
+
+                <button class="button button-text"
+                    onclick="controlarLedBanco('AUTO')">
+                    Voltar ao modo automático
+                </button>
+
+                <p id="status-comando-banco" class="feedback" aria-live="polite">
+                    Controle automático pelo sensor.
+                </p>
+            </article>
+
+        </section>
+
+        <footer class="page-footer">
+            <span>Grupo 18 · Hollow Knight</span>
+            <span>Comunicação via MQTT · HiveMQ</span>
+        </footer>
+    </main>
+</body>
+</html>
