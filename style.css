@@ -247,3 +247,45 @@ button:hover,
         justify-content: center;
     }
 }
+
+/* Botão de transição para a experiência gamificada */
+.page-header {
+    position: relative;
+}
+
+.portal-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 9px 16px;
+    background: linear-gradient(135deg, #1b263b, #0d1321);
+    color: #f1c40f;
+    border: 1px solid rgba(241, 196, 15, 0.55);
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: bold;
+    letter-spacing: 0.5px;
+    text-decoration: none;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+    transition: transform 0.2s, box-shadow 0.2s, border-color 0.2s;
+}
+
+.portal-btn:hover {
+    transform: translateY(-2px);
+    border-color: #f1c40f;
+    box-shadow: 0 6px 20px rgba(241, 196, 15, 0.25);
+}
+
+.portal-icon {
+    font-size: 14px;
+}
+
+@media (max-width: 720px) {
+    .portal-btn {
+        position: static;
+        margin-bottom: 16px;
+    }
+}

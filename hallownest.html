@@ -1,0 +1,1279 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hallownest · Crônicas Ciberfísicas | Grupo 18</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@600;700;900&family=JetBrains+Mono:wght@400;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/paho-mqtt/1.0.1/mqttws31.min.js" type="text/javascript"></script>
+
+    <style>
+        :root {
+            --bg-abyss: #06080d;
+            --bg-deep: #0b101b;
+            --card-bg: rgba(13, 19, 32, 0.84);
+            --border-pale: rgba(203, 213, 225, 0.16);
+            --border-glow: rgba(125, 211, 252, 0.45);
+            --text-ivory: #f1f5f9;
+            --text-muted: #94a3b8;
+            --soul-blue: #38bdf8;
+            --soul-pale: #e0f2fe;
+            --infection-orange: #ff6b1a;
+            --infection-gold: #ffb703;
+            --bench-emerald: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Plus Jakarta Sans', sans-serif;
+            background: radial-gradient(circle at 50% 0%, #131c31 0%, var(--bg-abyss) 70%);
+            color: var(--text-ivory);
+            min-height: 100vh;
+            overflow-x: hidden;
+            transition: background 1s ease;
+        }
+
+        body.infection-mode {
+            background: radial-gradient(circle at 50% 0%, #2a120a 0%, #090504 75%);
+        }
+
+        #particle-canvas {
+            position: fixed;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .wrapper {
+            position: relative;
+            z-index: 1;
+            max-width: 1260px;
+            margin: 0 auto;
+            padding: 20px 24px 48px;
+        }
+
+        /* HUD SUPERIOR */
+        .hud-bar {
+            display: flex;
+            flex-wrap: wrap;
+            align-items: center;
+            justify-content: space-between;
+            gap: 16px;
+            background: rgba(10, 15, 26, 0.88);
+            border: 1px solid var(--border-pale);
+            border-radius: 16px;
+            padding: 14px 22px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 12px 35px rgba(0, 0, 0, 0.55);
+            margin-bottom: 24px;
+        }
+
+        .hud-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .back-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            padding: 8px 14px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-pale);
+            color: var(--text-ivory);
+            text-decoration: none;
+            font-size: 13px;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.12);
+            border-color: var(--soul-blue);
+        }
+
+        .brand-title {
+            font-family: 'Cinzel', serif;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 1.5px;
+            color: var(--soul-pale);
+        }
+
+        .brand-sub {
+            font-size: 11px;
+            color: var(--text-muted);
+            letter-spacing: 1.5px;
+            text-transform: uppercase;
+        }
+
+        /* VASO DE ALMA E MÁSCARAS */
+        .knight-vitals {
+            display: flex;
+            align-items: center;
+            gap: 18px;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 8px 18px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        .soul-orb {
+            position: relative;
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 2px solid #cbd5e1;
+            overflow: hidden;
+            background: #090d16;
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.35);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .soul-liquid {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 45%;
+            background: linear-gradient(180deg, #e0f2fe, #38bdf8);
+            transition: height 0.8s cubic-bezier(0.22, 1, 0.36, 1), background 0.6s;
+        }
+
+        .soul-orb.full .soul-liquid {
+            height: 100%;
+        }
+
+        .soul-orb.infected .soul-liquid {
+            background: linear-gradient(180deg, #ffb703, #ff6b1a);
+        }
+
+        .soul-label {
+            position: relative;
+            z-index: 1;
+            font-family: 'Cinzel', serif;
+            font-size: 10px;
+            font-weight: 900;
+            color: #06080d;
+            text-shadow: 0 0 4px rgba(255, 255, 255, 0.8);
+        }
+
+        .masks-row {
+            display: flex;
+            gap: 8px;
+        }
+
+        .mask {
+            width: 22px;
+            height: 26px;
+            background: var(--soul-pale);
+            border-radius: 50% 50% 45% 45%;
+            position: relative;
+            box-shadow: 0 0 10px rgba(224, 242, 254, 0.45);
+            transition: all 0.4s ease;
+        }
+
+        .mask::before, .mask::after {
+            content: '';
+            position: absolute;
+            top: 11px;
+            width: 4px;
+            height: 6px;
+            background: #06080d;
+            border-radius: 50%;
+        }
+
+        .mask::before { left: 5px; }
+        .mask::after { right: 5px; }
+
+        .mask.damaged {
+            background: #334155;
+            box-shadow: none;
+            transform: scale(0.88);
+            opacity: 0.45;
+        }
+
+        .mask.infected {
+            background: var(--infection-orange);
+            box-shadow: 0 0 12px var(--infection-orange);
+        }
+
+        .hud-right {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .sound-btn {
+            background: rgba(255, 255, 255, 0.06);
+            border: 1px solid var(--border-pale);
+            color: var(--text-ivory);
+            padding: 8px 12px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            transition: 0.2s;
+        }
+
+        .sound-btn:hover {
+            border-color: var(--infection-gold);
+        }
+
+        .broker-pill {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 14px;
+            border-radius: 999px;
+            background: rgba(15, 23, 42, 0.9);
+            border: 1px solid var(--border-pale);
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 12px;
+        }
+
+        .dot {
+            width: 9px;
+            height: 9px;
+            border-radius: 50%;
+            background: #f59e0b;
+            box-shadow: 0 0 8px #f59e0b;
+        }
+
+        .dot.online {
+            background: #10b981;
+            box-shadow: 0 0 10px #10b981;
+        }
+
+        .dot.offline {
+            background: #ef4444;
+            box-shadow: 0 0 10px #ef4444;
+        }
+
+        /* MAPA INTERATIVO DE HALLOWNEST */
+        .map-stage {
+            position: relative;
+            background: linear-gradient(180deg, rgba(14, 21, 37, 0.9), rgba(8, 12, 22, 0.95));
+            border: 1px solid var(--border-pale);
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 26px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+        }
+
+        .map-header {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+
+        .map-title {
+            font-family: 'Cinzel', serif;
+            font-size: 20px;
+            letter-spacing: 2px;
+            color: var(--infection-gold);
+        }
+
+        .map-legend {
+            display: flex;
+            gap: 16px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .legend-line {
+            width: 22px;
+            height: 3px;
+            border-radius: 2px;
+        }
+
+        .hallownest-svg {
+            width: 100%;
+            height: 230px;
+            display: block;
+        }
+
+        .vein-path {
+            fill: none;
+            stroke: #334155;
+            stroke-width: 4;
+            stroke-linecap: round;
+        }
+
+        .vein-flow {
+            fill: none;
+            stroke: var(--soul-blue);
+            stroke-width: 4;
+            stroke-dasharray: 12 18;
+            animation: flowDash 1.4s linear infinite;
+            transition: stroke 0.5s;
+        }
+
+        .vein-flow.infected {
+            stroke: var(--infection-orange);
+        }
+
+        .vein-stag {
+            fill: none;
+            stroke: #334155;
+            stroke-width: 4;
+            stroke-dasharray: 6 6;
+        }
+
+        .vein-stag.active {
+            stroke: var(--infection-gold);
+            stroke-width: 5;
+            filter: drop-shadow(0 0 8px var(--infection-gold));
+            animation: flowDash 0.6s linear infinite;
+        }
+
+        @keyframes flowDash {
+            to { stroke-dashoffset: -60; }
+        }
+
+        .node-circle {
+            fill: #0f172a;
+            stroke: var(--soul-blue);
+            stroke-width: 3;
+            transition: all 0.4s;
+        }
+
+        .node-circle.infected {
+            stroke: var(--infection-orange);
+            fill: #271008;
+        }
+
+        .node-circle.occupied {
+            stroke: var(--bench-emerald);
+            fill: #08241b;
+        }
+
+        /* GRID DOS 3 REINOS (SISTEMAS A, B, C) */
+        .realms-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 22px;
+            margin-bottom: 26px;
+        }
+
+        @media (max-width: 980px) {
+            .realms-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .realm-card {
+            position: relative;
+            background: var(--card-bg);
+            border: 1px solid var(--border-pale);
+            border-radius: 18px;
+            padding: 22px;
+            backdrop-filter: blur(10px);
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.45);
+            transition: transform 0.25s, border-color 0.3s, box-shadow 0.3s;
+        }
+
+        .realm-card:hover {
+            transform: translateY(-4px);
+            border-color: var(--border-glow);
+        }
+
+        .realm-card.alert-state {
+            border-color: rgba(255, 107, 26, 0.75);
+            box-shadow: 0 0 30px rgba(255, 107, 26, 0.22);
+        }
+
+        .realm-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 14px;
+        }
+
+        .realm-tag {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            color: var(--infection-gold);
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+
+        .realm-name {
+            font-family: 'Cinzel', serif;
+            font-size: 20px;
+            margin-top: 4px;
+            color: var(--text-ivory);
+        }
+
+        .topic-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11px;
+            background: rgba(255, 255, 255, 0.06);
+            padding: 4px 8px;
+            border-radius: 6px;
+            color: var(--text-muted);
+        }
+
+        /* PALCO VISUAL DE CADA SISTEMA */
+        .visual-chamber {
+            position: relative;
+            height: 130px;
+            border-radius: 12px;
+            background: radial-gradient(circle at center, #162038 0%, #070a12 100%);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            margin-bottom: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        /* Animação Selo do Ovo Negro (Sistema A) */
+        .egg-seal {
+            width: 74px;
+            height: 92px;
+            border-radius: 50% 50% 45% 45%;
+            border: 3px solid var(--soul-blue);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.4), inset 0 0 15px rgba(56, 189, 248, 0.25);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: all 0.5s ease;
+        }
+
+        .egg-seal::after {
+            content: '◈';
+            font-size: 28px;
+            color: var(--soul-blue);
+            animation: pulseSeal 2.5s infinite ease-in-out;
+        }
+
+        .egg-seal.high {
+            border-color: var(--infection-orange);
+            box-shadow: 0 0 32px rgba(255, 107, 26, 0.75), inset 0 0 22px rgba(255, 107, 26, 0.5);
+        }
+
+        .egg-seal.high::after {
+            color: var(--infection-orange);
+            animation: pulseSeal 0.7s infinite ease-in-out;
+        }
+
+        @keyframes pulseSeal {
+            0%, 100% { transform: scale(1); opacity: 0.85; }
+            50% { transform: scale(1.18); opacity: 1; }
+        }
+
+        /* Animação Portão da Estação (Sistema B) */
+        .gate-frame {
+            width: 140px;
+            height: 94px;
+            border: 3px solid #64748b;
+            border-bottom: none;
+            border-radius: 70px 70px 0 0;
+            position: relative;
+            overflow: hidden;
+            background: #04060a;
+        }
+
+        .gate-bars {
+            position: absolute;
+            inset: 0;
+            background: repeating-linear-gradient(
+                90deg,
+                #94a3b8 0px,
+                #94a3b8 6px,
+                transparent 6px,
+                transparent 22px
+            );
+            border-bottom: 5px solid #cbd5e1;
+            transform: translateY(-82%);
+            transition: transform 0.75s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .gate-bars.closed {
+            transform: translateY(0%);
+            background: repeating-linear-gradient(
+                90deg,
+                var(--infection-orange) 0px,
+                var(--infection-orange) 6px,
+                transparent 6px,
+                transparent 22px
+            );
+            border-bottom-color: var(--infection-orange);
+        }
+
+        /* Animação Banco de Descanso (Sistema C) */
+        .bench-scene {
+            position: relative;
+            width: 180px;
+            height: 100px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: center;
+        }
+
+        .lamp-glow {
+            position: absolute;
+            top: 8px;
+            left: 28px;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #fef08a;
+            box-shadow: 0 0 25px 10px rgba(254, 240, 138, 0.45);
+            transition: all 0.4s;
+        }
+
+        .lamp-glow.blink {
+            animation: lampFlash 0.5s 3;
+        }
+
+        @keyframes lampFlash {
+            0%, 100% { transform: scale(1); box-shadow: 0 0 25px 10px rgba(254, 240, 138, 0.45); }
+            50% { transform: scale(1.6); box-shadow: 0 0 45px 20px rgba(56, 189, 248, 0.95); background: #38bdf8; }
+        }
+
+        .knight-figure {
+            position: absolute;
+            bottom: 24px;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: all 0.45s ease;
+            text-align: center;
+        }
+
+        .knight-figure.seated {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .knight-head {
+            width: 24px;
+            height: 22px;
+            background: #f8fafc;
+            border-radius: 6px;
+            margin: 0 auto;
+            position: relative;
+            box-shadow: 0 0 12px rgba(255, 255, 255, 0.6);
+        }
+
+        .knight-head::before, .knight-head::after {
+            content: '';
+            position: absolute;
+            top: -10px;
+            width: 5px;
+            height: 12px;
+            background: #f8fafc;
+            border-radius: 4px 4px 0 0;
+        }
+
+        .knight-head::before { left: 2px; }
+        .knight-head::after { right: 2px; }
+
+        .knight-cloak {
+            width: 28px;
+            height: 20px;
+            background: #334155;
+            border-radius: 8px 8px 2px 2px;
+            margin: -2px auto 0;
+        }
+
+        .iron-bench {
+            width: 96px;
+            height: 24px;
+            border-top: 4px solid #94a3b8;
+            border-left: 4px solid #64748b;
+            border-right: 4px solid #64748b;
+            border-radius: 6px 6px 0 0;
+        }
+
+        .state-readout {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.35);
+            padding: 10px 14px;
+            border-radius: 10px;
+            margin-bottom: 14px;
+            font-size: 13px;
+        }
+
+        .state-value {
+            font-family: 'JetBrains Mono', monospace;
+            font-weight: 700;
+            font-size: 14px;
+            color: var(--soul-blue);
+        }
+
+        .state-value.danger { color: var(--infection-orange); }
+        .state-value.success { color: var(--bench-emerald); }
+
+        .controls-group {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .cmd-btn {
+            padding: 9px 8px;
+            border-radius: 8px;
+            border: 1px solid var(--border-pale);
+            background: rgba(255, 255, 255, 0.06);
+            color: var(--text-ivory);
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .cmd-btn:hover {
+            background: rgba(56, 189, 248, 0.18);
+            border-color: var(--soul-blue);
+        }
+
+        .cmd-btn.stag-call {
+            grid-column: span 3;
+            background: linear-gradient(135deg, #d97706, #b45309);
+            border-color: var(--infection-gold);
+            color: #fff;
+            font-size: 13px;
+            padding: 11px;
+            margin-top: 4px;
+            box-shadow: 0 4px 15px rgba(217, 119, 6, 0.35);
+        }
+
+        .cmd-btn.stag-call:hover {
+            filter: brightness(1.12);
+        }
+
+        .feedback-line {
+            font-size: 12px;
+            color: var(--text-muted);
+            min-height: 18px;
+            text-align: center;
+        }
+
+        /* RODAPÉ: CRÔNICAS DO CARTÓGRAFO & CONQUISTAS */
+        .bottom-grid {
+            display: grid;
+            grid-template-columns: 1.4fr 1fr;
+            gap: 22px;
+        }
+
+        @media (max-width: 860px) {
+            .bottom-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel-box {
+            background: var(--card-bg);
+            border: 1px solid var(--border-pale);
+            border-radius: 16px;
+            padding: 18px 20px;
+            backdrop-filter: blur(10px);
+        }
+
+        .panel-title {
+            font-family: 'Cinzel', serif;
+            font-size: 15px;
+            color: var(--soul-pale);
+            margin-bottom: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .log-stream {
+            height: 150px;
+            overflow-y: auto;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 11.5px;
+            background: rgba(4, 6, 12, 0.75);
+            border-radius: 10px;
+            padding: 10px 12px;
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .log-entry {
+            color: #cbd5e1;
+            line-height: 1.4;
+        }
+
+        .log-time { color: #64748b; }
+        .log-pub { color: #fbbf24; }
+        .log-sub { color: #38bdf8; }
+
+        .achievements-list {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        .badge-item {
+            padding: 10px 12px;
+            border-radius: 10px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.07);
+            opacity: 0.42;
+            transition: all 0.4s ease;
+        }
+
+        .badge-item.unlocked {
+            opacity: 1;
+            background: rgba(245, 158, 11, 0.12);
+            border-color: rgba(245, 158, 11, 0.55);
+            box-shadow: 0 0 16px rgba(245, 158, 11, 0.18);
+        }
+
+        .badge-name {
+            font-family: 'Cinzel', serif;
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--infection-gold);
+        }
+
+        .badge-desc {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="particle-canvas"></canvas>
+
+    <div class="wrapper">
+        <!-- HUD SUPERIOR -->
+        <header class="hud-bar">
+            <div class="hud-left">
+                <a href="index.html" class="back-btn">← Painel Técnico</a>
+                <div>
+                    <div class="brand-sub">Grupo 18 · Rede Ciberfísica</div>
+                    <div class="brand-title">CRÔNICAS DE HALLOWNEST</div>
+                </div>
+            </div>
+
+            <!-- VITAIS DO CAVALEIRO (Reage aos sensores reais!) -->
+            <div class="knight-vitals" title="Reage em tempo real ao Banco de Descanso e ao Templo">
+                <div class="soul-orb" id="soul-orb">
+                    <div class="soul-liquid"></div>
+                    <span class="soul-label">ALMA</span>
+                </div>
+                <div class="masks-row" id="masks-row">
+                    <div class="mask"></div>
+                    <div class="mask"></div>
+                    <div class="mask"></div>
+                    <div class="mask"></div>
+                    <div class="mask"></div>
+                </div>
+            </div>
+
+            <div class="hud-right">
+                <button class="sound-btn" id="sound-toggle" onclick="toggleAudio()">🔇 Som: OFF</button>
+                <div class="broker-pill">
+                    <span class="dot" id="mqtt-dot"></span>
+                    <span id="mqtt-text">Conectando WSS...</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- MAPA INTERATIVO DE CONECTIVIDADE -->
+        <section class="map-stage">
+            <div class="map-header">
+                <h2 class="map-title">MAPA VIVO DE TELEMETRIA & ATUAÇÃO</h2>
+                <div class="map-legend">
+                    <span class="legend-item"><span class="legend-line" style="background:#38bdf8"></span> Fluxo de Alma / Seguro</span>
+                    <span class="legend-item"><span class="legend-line" style="background:#ff6b1a"></span> Alerta de Infecção</span>
+                    <span class="legend-item"><span class="legend-line" style="background:#ffb703"></span> Rota do Besouro</span>
+                </div>
+            </div>
+
+            <svg class="hallownest-svg" viewBox="0 0 1000 220" preserveAspectRatio="xMidYMid meet">
+                <!-- Trilhas Base -->
+                <path class="vein-path" d="M 170 110 C 310 40, 390 40, 500 110" />
+                <path class="vein-path" d="M 500 110 C 610 180, 690 180, 830 110" />
+
+                <!-- Fluxos Animados -->
+                <path id="flow-a-b" class="vein-flow" d="M 170 110 C 310 40, 390 40, 500 110" />
+                <path id="flow-b-c" class="vein-stag" d="M 500 110 C 610 180, 690 180, 830 110" />
+
+                <!-- Labels dos Tópicos nas Rotas -->
+                <text x="335" y="42" fill="#94a3b8" font-family="JetBrains Mono" font-size="11" text-anchor="middle">templo/infeccao</text>
+                <text x="665" y="192" fill="#94a3b8" font-family="JetBrains Mono" font-size="11" text-anchor="middle">estacao/chamado</text>
+
+                <!-- Nó A: Templo -->
+                <g transform="translate(170, 110)">
+                    <circle id="map-node-a" class="node-circle" r="34" />
+                    <text y="5" fill="#f8fafc" font-family="Cinzel" font-weight="700" font-size="16" text-anchor="middle">A</text>
+                    <text y="56" fill="#e2e8f0" font-family="Cinzel" font-size="13" text-anchor="middle">Templo do Ovo Negro</text>
+                </g>
+
+                <!-- Nó B: Estação -->
+                <g transform="translate(500, 110)">
+                    <circle id="map-node-b" class="node-circle" r="34" />
+                    <text y="5" fill="#f8fafc" font-family="Cinzel" font-weight="700" font-size="16" text-anchor="middle">B</text>
+                    <text y="56" fill="#e2e8f0" font-family="Cinzel" font-size="13" text-anchor="middle">Estação do Besouro</text>
+                </g>
+
+                <!-- Nó C: Banco -->
+                <g transform="translate(830, 110)">
+                    <circle id="map-node-c" class="node-circle" r="34" />
+                    <text y="5" fill="#f8fafc" font-family="Cinzel" font-weight="700" font-size="16" text-anchor="middle">C</text>
+                    <text y="56" fill="#e2e8f0" font-family="Cinzel" font-size="13" text-anchor="middle">Banco de Descanso</text>
+                </g>
+            </svg>
+        </section>
+
+        <!-- OS TRÊS REINOS (CONTROLE BIDIRECIONAL) -->
+        <section class="realms-grid">
+            <!-- SISTEMA A -->
+            <article class="realm-card" id="card-a">
+                <div>
+                    <div class="realm-top">
+                        <div>
+                            <div class="realm-tag">Sistema A · Aquisição LDR</div>
+                            <h3 class="realm-name">Templo do Ovo Negro</h3>
+                        </div>
+                        <span class="topic-badge">templo/comando</span>
+                    </div>
+
+                    <div class="visual-chamber">
+                        <div class="egg-seal" id="egg-seal"></div>
+                    </div>
+
+                    <div class="state-readout">
+                        <span>Nível de Infecção:</span>
+                        <span class="state-value" id="val-infeccao">AGUARDANDO...</span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="controls-group">
+                        <button class="cmd-btn" onclick="enviarComando('templo', 'LIGAR')">Acender Selo</button>
+                        <button class="cmd-btn" onclick="enviarComando('templo', 'DESLIGAR')">Apagar Selo</button>
+                        <button class="cmd-btn" onclick="enviarComando('templo', 'AUTO')">Modo Auto</button>
+                    </div>
+                    <div class="feedback-line" id="fb-templo">Sincronizado com sensor LDR</div>
+                </div>
+            </article>
+
+            <!-- SISTEMA B -->
+            <article class="realm-card" id="card-b">
+                <div>
+                    <div class="realm-top">
+                        <div>
+                            <div class="realm-tag">Sistema B · Atuação Servo</div>
+                            <h3 class="realm-name">Estação do Besouro</h3>
+                        </div>
+                        <span class="topic-badge">estacao/comando</span>
+                    </div>
+
+                    <div class="visual-chamber">
+                        <div class="gate-frame">
+                            <div class="gate-bars" id="gate-bars"></div>
+                        </div>
+                    </div>
+
+                    <div class="state-readout">
+                        <span>Portão / Viagem:</span>
+                        <span class="state-value" id="val-estacao">ABERTO · PRONTO</span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="controls-group">
+                        <button class="cmd-btn" onclick="enviarComando('estacao', 'ABRIR')">Abrir Portão</button>
+                        <button class="cmd-btn" onclick="enviarComando('estacao', 'FECHAR')">Lockdown</button>
+                        <button class="cmd-btn" onclick="enviarComando('estacao', 'AUTO')">Modo Auto</button>
+                        <button class="cmd-btn stag-call" onclick="tocarSinoBesouro()">🔔 Tocar Sino da Estação (Chamar Besouro)</button>
+                    </div>
+                    <div class="feedback-line" id="fb-estacao">Responde à infecção do Templo</div>
+                </div>
+            </article>
+
+            <!-- SISTEMA C -->
+            <article class="realm-card" id="card-c">
+                <div>
+                    <div class="realm-top">
+                        <div>
+                            <div class="realm-tag">Sistema C · HC-SR04 + Buzzer</div>
+                            <h3 class="realm-name">Banco de Descanso</h3>
+                        </div>
+                        <span class="topic-badge">banco/comando</span>
+                    </div>
+
+                    <div class="visual-chamber">
+                        <div class="bench-scene">
+                            <div class="lamp-glow" id="bench-lamp"></div>
+                            <div class="knight-figure" id="knight-figure">
+                                <div class="knight-head"></div>
+                                <div class="knight-cloak"></div>
+                            </div>
+                            <div class="iron-bench"></div>
+                        </div>
+                    </div>
+
+                    <div class="state-readout">
+                        <span>Estado do Santuário:</span>
+                        <span class="state-value" id="val-banco">AGUARDANDO...</span>
+                    </div>
+                </div>
+
+                <div>
+                    <div class="controls-group">
+                        <button class="cmd-btn" onclick="enviarComando('banco', 'LIGAR')">Acender Luz</button>
+                        <button class="cmd-btn" onclick="enviarComando('banco', 'DESLIGAR')">Apagar Luz</button>
+                        <button class="cmd-btn" onclick="enviarComando('banco', 'AUTO')">Modo Auto</button>
+                    </div>
+                    <div class="feedback-line" id="fb-banco">Detecção ultrassônica ativa</div>
+                </div>
+            </article>
+        </section>
+
+        <!-- CRÔNICAS MQTT E CONQUISTAS -->
+        <section class="bottom-grid">
+            <div class="panel-box">
+                <div class="panel-title">
+                    <span>📜 CRÔNICAS DO CARTÓGRAFO (TRÁFEGO MQTT AO VIVO)</span>
+                    <span style="font-family:'JetBrains Mono'; font-size:11px; color:#64748b;">broker.hivemq.com:8884</span>
+                </div>
+                <div class="log-stream" id="log-stream">
+                    <div class="log-entry"><span class="log-time">[SISTEMA]</span> Inicializando conexão WebSocket segura com Hallownest...</div>
+                </div>
+            </div>
+
+            <div class="panel-box">
+                <div class="panel-title">
+                    <span>🏆 CONQUISTAS DA REDE</span>
+                    <span id="badge-counter" style="font-family:'JetBrains Mono'; font-size:12px; color:#ffb703;">0 / 4</span>
+                </div>
+                <div class="achievements-list">
+                    <div class="badge-item" id="ach-link">
+                        <div class="badge-name">✦ Elo do Cartógrafo</div>
+                        <div class="badge-desc">Conectado ao broker HiveMQ via WSS.</div>
+                    </div>
+                    <div class="badge-item" id="ach-infection">
+                        <div class="badge-name">☀ Selo do Ovo Negro</div>
+                        <div class="badge-desc">Detectou estado de Infecção ALTA.</div>
+                    </div>
+                    <div class="badge-item" id="ach-stag">
+                        <div class="badge-name">🔔 Último Besouro</div>
+                        <div class="badge-desc">Chamado enviado à Estação (TRUE).</div>
+                    </div>
+                    <div class="badge-item" id="ach-bench">
+                        <div class="badge-name">⚔ Descanso do Viajante</div>
+                        <div class="badge-desc">Presença detectada no Banco (OCUPADO).</div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </div>
+
+    <script>
+        /* =========================================================
+           1. SISTEMA DE ÁUDIO PROCEDURAL (WEB AUDIO API)
+        ========================================================= */
+        let audioEnabled = false;
+        let audioCtx = null;
+
+        function toggleAudio() {
+            audioEnabled = !audioEnabled;
+            const btn = document.getElementById("sound-toggle");
+            if (audioEnabled) {
+                if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                btn.innerText = "🔊 Som: ON";
+                playTone(523.25, "sine", 0.25, 0.08);
+            } else {
+                btn.innerText = "🔇 Som: OFF";
+            }
+        }
+
+        function playTone(freq, type = "sine", duration = 0.3, vol = 0.08) {
+            if (!audioEnabled || !audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = type;
+            osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+            gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + duration);
+        }
+
+        /* =========================================================
+           2. PARTÍCULAS DE ALMA / INFECÇÃO (HTML5 CANVAS)
+        ========================================================= */
+        const canvas = document.getElementById("particle-canvas");
+        const ctx = canvas.getContext("2d");
+        let isInfectedGlobal = false;
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener("resize", resizeCanvas);
+        resizeCanvas();
+
+        for (let i = 0; i < 55; i++) {
+            particles.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                r: Math.random() * 2.6 + 0.8,
+                vx: (Math.random() - 0.5) * 0.4,
+                vy: -Math.random() * 0.6 - 0.15,
+                alpha: Math.random() * 0.6 + 0.2
+            });
+        }
+
+        function animateParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            for (const p of particles) {
+                p.x += p.vx;
+                p.y += p.vy;
+                if (p.y < -10) { p.y = canvas.height + 10; p.x = Math.random() * canvas.width; }
+                if (p.x < -10) p.x = canvas.width + 10;
+                if (p.x > canvas.width + 10) p.x = -10;
+
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+                ctx.fillStyle = isInfectedGlobal
+                    ? `rgba(255, 107, 26, ${p.alpha})`
+                    : `rgba(186, 230, 253, ${p.alpha})`;
+                ctx.fill();
+            }
+            requestAnimationFrame(animateParticles);
+        }
+        animateParticles();
+
+        /* =========================================================
+           3. LOG, CONQUISTAS E ESTADO VISUAL
+        ========================================================= */
+        const unlockedSet = new Set();
+
+        function unlockAchievement(id) {
+            if (unlockedSet.has(id)) return;
+            unlockedSet.add(id);
+            document.getElementById(id).classList.add("unlocked");
+            document.getElementById("badge-counter").innerText = `${unlockedSet.size} / 4`;
+            playTone(659.25, "triangle", 0.35, 0.09);
+            setTimeout(() => playTone(880, "triangle", 0.45, 0.09), 120);
+        }
+
+        function addLog(tipo, topico, payload) {
+            const stream = document.getElementById("log-stream");
+            const now = new Date().toLocaleTimeString("pt-BR");
+            const line = document.createElement("div");
+            line.className = "log-entry";
+            const badgeClass = tipo === "PUB" ? "log-pub" : "log-sub";
+            line.innerHTML = `<span class="log-time">[${now}]</span> <span class="${badgeClass}">${tipo}</span> ${topico} ➔ <strong>${payload}</strong>`;
+            stream.prepend(line);
+            if (stream.children.length > 40) stream.removeChild(stream.lastChild);
+        }
+
+        function atualizarVisualInfeccao(estado) {
+            const alta = estado === "ALTA";
+            isInfectedGlobal = alta;
+
+            document.body.classList.toggle("infection-mode", alta);
+            document.getElementById("card-a").classList.toggle("alert-state", alta);
+            document.getElementById("egg-seal").classList.toggle("high", alta);
+            document.getElementById("flow-a-b").classList.toggle("infected", alta);
+            document.getElementById("map-node-a").classList.toggle("infected", alta);
+            document.getElementById("soul-orb").classList.toggle("infected", alta);
+
+            const valEl = document.getElementById("val-infeccao");
+            valEl.innerText = estado;
+            valEl.className = "state-value " + (alta ? "danger" : "");
+
+            // Atualiza máscaras do HUD
+            const masks = document.querySelectorAll(".mask");
+            masks.forEach((m, idx) => {
+                m.classList.toggle("infected", alta);
+                m.classList.toggle("damaged", alta && idx >= 3);
+            });
+
+            // Portão da Estação reage automaticamente
+            const gate = document.getElementById("gate-bars");
+            const estacaoEl = document.getElementById("val-estacao");
+            if (alta) {
+                gate.classList.add("closed");
+                estacaoEl.innerText = "LOCKDOWN (FECHADO)";
+                estacaoEl.className = "state-value danger";
+                unlockAchievement("ach-infection");
+                playTone(146.83, "sawtooth", 0.4, 0.07);
+            } else {
+                gate.classList.remove("closed");
+                estacaoEl.innerText = "ABERTO · PRONTO";
+                estacaoEl.className = "state-value";
+                playTone(440, "sine", 0.3, 0.07);
+            }
+        }
+
+        function atualizarVisualBanco(estado) {
+            const ocupado = estado === "OCUPADO";
+            document.getElementById("knight-figure").classList.toggle("seated", ocupado);
+            document.getElementById("map-node-c").classList.toggle("occupied", ocupado);
+            document.getElementById("soul-orb").classList.toggle("full", ocupado);
+
+            const valEl = document.getElementById("val-banco");
+            valEl.innerText = estado;
+            valEl.className = "state-value " + (ocupado ? "success" : "");
+
+            if (ocupado) {
+                unlockAchievement("ach-bench");
+                playTone(587.33, "sine", 0.5, 0.08);
+            }
+        }
+
+        function animarChamadoBesouro() {
+            const stagLine = document.getElementById("flow-b-c");
+            const lamp = document.getElementById("bench-lamp");
+            const estacaoEl = document.getElementById("val-estacao");
+
+            stagLine.classList.add("active");
+            lamp.classList.remove("blink");
+            void lamp.offsetWidth;
+            lamp.classList.add("blink");
+
+            estacaoEl.innerText = "BESOURO A CAMINHO!";
+            estacaoEl.className = "state-value success";
+            unlockAchievement("ach-stag");
+            playTone(392.00, "triangle", 0.6, 0.1);
+
+            setTimeout(() => {
+                stagLine.classList.remove("active");
+                estacaoEl.innerText = isInfectedGlobal ? "LOCKDOWN (FECHADO)" : "ABERTO · PRONTO";
+                estacaoEl.className = "state-value " + (isInfectedGlobal ? "danger" : "");
+            }, 4000);
+        }
+
+        /* =========================================================
+           4. CONEXÃO MQTT (EXATAMENTE OS 6 TÓPICOS DO GRUPO 18)
+        ========================================================= */
+        const BROKER = "broker.hivemq.com";
+        const PORTA_WSS = 8884;
+        const CLIENT_ID = "hallownest_hud_g18_" + Math.random().toString(16).slice(2, 10);
+
+        const TOPICOS = {
+            INFECCAO: "cscf/grupo18/hollow/templo/infeccao",
+            CMD_TEMPLO: "cscf/grupo18/hollow/templo/comando",
+            CMD_ESTACAO: "cscf/grupo18/hollow/estacao/comando",
+            CHAMADO: "cscf/grupo18/hollow/estacao/chamado",
+            ESTADO_BANCO: "cscf/grupo18/hollow/banco/estado",
+            CMD_BANCO: "cscf/grupo18/hollow/banco/comando"
+        };
+
+        const client = new Paho.MQTT.Client(BROKER, PORTA_WSS, CLIENT_ID);
+
+        client.onConnectionLost = function(res) {
+            document.getElementById("mqtt-dot").className = "dot offline";
+            document.getElementById("mqtt-text").innerText = "Desconectado";
+            addLog("ERRO", "broker", res.errorMessage || "Conexão perdida");
+        };
+
+        client.onMessageArrived = function(msg) {
+            const topico = msg.destinationName;
+            const payload = msg.payloadString;
+            addLog("SUB", topico, payload);
+
+            if (topico === TOPICOS.INFECCAO) {
+                atualizarVisualInfeccao(payload);
+            } else if (topico === TOPICOS.ESTADO_BANCO) {
+                atualizarVisualBanco(payload);
+            } else if (topico === TOPICOS.CHAMADO && payload === "TRUE") {
+                animarChamadoBesouro();
+            }
+        };
+
+        client.connect({
+            useSSL: true,
+            reconnect: true,
+            onSuccess: function() {
+                document.getElementById("mqtt-dot").className = "dot online";
+                document.getElementById("mqtt-text").innerText = "WSS Conectado (8884)";
+                unlockAchievement("ach-link");
+                addLog("SISTEMA", "HiveMQ", "Conectado com sucesso aos 6 tópicos do Grupo 18");
+
+                client.subscribe(TOPICOS.INFECCAO);
+                client.subscribe(TOPICOS.ESTADO_BANCO);
+                client.subscribe(TOPICOS.CHAMADO);
+            },
+            onFailure: function(err) {
+                document.getElementById("mqtt-dot").className = "dot offline";
+                document.getElementById("mqtt-text").innerText = "Falha WSS";
+                addLog("ERRO", "HiveMQ", err.errorMessage);
+            }
+        });
+
+        function publicar(topico, payload) {
+            if (!client.isConnected()) {
+                alert("Aguarde a conexão com o broker HiveMQ.");
+                return false;
+            }
+            const message = new Paho.MQTT.Message(payload);
+            message.destinationName = topico;
+            client.send(message);
+            addLog("PUB", topico, payload);
+            return true;
+        }
+
+        function enviarComando(sistema, cmd) {
+            const mapa = {
+                templo: { topico: TOPICOS.CMD_TEMPLO, fb: "fb-templo" },
+                estacao: { topico: TOPICOS.CMD_ESTACAO, fb: "fb-estacao" },
+                banco: { topico: TOPICOS.CMD_BANCO, fb: "fb-banco" }
+            };
+            const alvo = mapa[sistema];
+            if (publicar(alvo.topico, cmd)) {
+                document.getElementById(alvo.fb).innerText = `Comando "${cmd}" enviado via MQTT`;
+                if (sistema === "estacao" && cmd === "FECHAR") {
+                    document.getElementById("gate-bars").classList.add("closed");
+                } else if (sistema === "estacao" && cmd === "ABRIR") {
+                    document.getElementById("gate-bars").classList.remove("closed");
+                }
+            }
+        }
+
+        function tocarSinoBesouro() {
+            if (publicar(TOPICOS.CHAMADO, "TRUE")) {
+                document.getElementById("fb-estacao").innerText = "Sino tocado! Chamado enviado ao Banco.";
+            }
+        }
+    </script>
+</body>
+</html>
