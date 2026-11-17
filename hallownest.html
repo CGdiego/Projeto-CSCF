@@ -1222,7 +1222,6 @@
 
         client.connect({
             useSSL: true,
-            reconnect: true,
             onSuccess: function() {
                 document.getElementById("mqtt-dot").className = "dot online";
                 document.getElementById("mqtt-text").innerText = "WSS Conectado (8884)";
